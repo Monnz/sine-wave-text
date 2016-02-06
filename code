@@ -1,0 +1,211 @@
+-------------------------------------------------------------------------------------------------------------------------------------
+# Click the upper left button to run this simple demo.
+
+# CodeSkulptor runs in Chrome 18+, Firefox 11+, and Safari 6+.
+# Some features may work in other browsers, but do not expect
+# full functionality.  It does NOT run in Internet Explorer.
+
+# Sine wave text example
+# 2016 kelvin murage aka monnz
+# CodeSkulptor + Python
+# IPP January 2016
+--------------------------------------------------------------------------------------------------------------------------------------
+# Import modules needed
+import simplegui
+import math
+
+# Frame dimensions
+WIDTH = 700
+HEIGHT = 560
+
+# Initial message
+message = "Let's shake this text up a bit!"
+text_width = 0
+
+# Initial font size and start location
+size = 48
+start_y = ( HEIGHT / 2 ) + ( size / 4) 
+
+# scale factor, sine increment and timer update values
+scale_factor = 230
+increment = 0.05
+timer_increment = 25
+
+# The optimum range the sine will reach before it resets
+optimum_range = 2 * math.pi - increment
+
+# A list to store the position offsets
+position_offset = []
+
+# Defaults for the interface
+default_scale = scale_factor
+default_increment = increment
+default_frequency = timer_increment
+default_fontsize = size
+
+# Validate input for string, int and float
+def validate_input( text, input_type ):
+    
+    valid = True
+    string = False
+    
+    # lets try to convert to the type that we want  
+    try:
+        if input_type == "float":
+            test = float(text)
+        elif input_type == "int":
+            test = int(text)
+        elif input_type == "string":
+            string = True
+    
+    # what to do if exception has occurred
+    # set valid to false
+    
+    except ValueError:
+        valid = False
+    
+    # if string return evaluation of string length greater than 0
+    # else return true only if valid==True, the length is positive and there is no
+    # space character or minus character in the text
+    
+    if string:
+        return len(text) > 0
+    else:
+        return valid and len(text) and " " not in text and "-" not in text
+        
+# Initialise start offsets
+def init():
+    global position_offset, text_width
+    
+    # initialise the offsets
+    position_offset = []
+    
+    # get the width of the message for centering
+    text_width = frame.get_canvas_textwidth(message, size)
+    
+    # calculate and store the position offsets for the sine
+    for count in range(0,len(message)):
+        position_offset.append(count*increment)
+              
+# update the position offsets        
+def timer_handler():
+    global position_offset
+    
+    # update all the position counters in the list
+    for count in range(0,len(position_offset)):
+       position_offset[count] += increment
+       position_offset[count] = position_offset[count] % (optimum_range + increment)
+
+# input handler to change the message
+def change_message(text_input):
+    global message
+   
+    # Change the message and reinitialise 
+    if validate_input(text_input, "string"):
+        message = text_input
+        init()
+    
+# input handler to change the sine scale factor    
+def change_scale(text_input):
+    global scale_factor
+
+    # if we have a float, change the scale_factor
+    if validate_input(text_input,"float"):
+        scale_factor = float(text_input)
+        init()
+
+# Handler to change since offset increment          
+def change_increment(text_input):
+    global increment
+
+    # if we have a float, change the increment
+    if validate_input(text_input,"float"):
+        increment = float(text_input)
+        init()
+
+# Handler to change timer update frequency        
+def change_frequency(text_input):
+    global timer_increment, timer
+    valid = True    
+    
+    # if we have an int, change the timer frequency
+    if validate_input(text_input,"int"): 
+        timer_increment = int(text_input)     
+        timer.stop()
+        timer = simplegui.create_timer(timer_increment, timer_handler)
+        timer.start()            
+        init()
+
+# Handler to change font size        
+def change_fontsize(text_input):
+    global size, start_y
+    valid = True
+    
+    # If we have an int, change the text size
+    if validate_input(text_input,"int"):
+        #  if size positive
+        thesize = int(text_input)
+         
+        # Check that the font size is not too large    
+        if thesize > 0 and thesize <= 1000:
+            # Establish the vertical center position and font size
+            size = thesize
+            start_y = ( HEIGHT / 2 ) + ( size / 4) 
+            init()
+    
+# Handler to draw on canvas
+def draw(canvas):
+    # Work out the start position to center the text 
+    # (based on the canvas size and overall text width)
+    pos = (WIDTH-text_width)/2
+    
+    # Draw all the letters of the message at their new positions
+    for count in range(0,len(message)):
+        # calculate the sine offset to add based on the values stored in the list
+        sine_offset_y = math.sin(position_offset[count]) * scale_factor
+        # get text width of individual character
+        ts = frame.get_canvas_textwidth(message[count], size)
+        # draw the character on the canvas at its appropriate location
+        canvas.draw_text(message[count], [pos,start_y+sine_offset_y], size, "Red")
+        
+        # Add the value of the previous character to the position for the next time
+        pos += ts
+        
+# Create a frame and assign callbacks to event handlers
+frame = simplegui.create_frame("Sine wave text example", WIDTH, HEIGHT)
+
+# initialise sine values
+init()
+
+# Set up the timer to update the sine wave information
+timer = simplegui.create_timer(timer_increment, timer_handler)
+
+# Set the draw handler
+frame.set_draw_handler(draw)
+
+# Input handler to manipulate the sine increment, scale, text and font size
+label1 			= frame.add_label("SINE WAVE TEXT")
+label2 			= frame.add_label("")
+label3 			= frame.add_label("Change the values below to affect the text and the wave.")
+label4			= frame.add_label("")
+label5			= frame.add_label("Tip: For the sine increment, small fractional values work best.")
+label6 			= frame.add_label("")
+label7			= frame.add_label("Tip: The scale factor affects the amplitude (height) of the sine wave.")
+label8 			= frame.add_label("")
+message_input   = frame.add_input('Enter text to change message:', change_message, 210 )
+scale_input     = frame.add_input('Scale factor: (default '+str(default_scale)+")", change_scale, 210 )
+increment_input = frame.add_input('Sine increment: (default '+str(default_increment)+")", change_increment, 210 )
+frequency_input = frame.add_input('Update frequency: (default '+str(default_frequency)+")",change_frequency, 210 )
+fontsize_input  = frame.add_input('Font size: (default '+str(default_fontsize)+")",change_fontsize, 210 )
+
+# Set the gui inputs from the default values
+scale_input.set_text(default_scale)
+increment_input.set_text(default_increment)
+frequency_input.set_text(default_frequency)
+fontsize_input.set_text(default_fontsize)
+
+# Start the frame animation
+frame.start()
+
+# start the position update timer
+timer.start()
